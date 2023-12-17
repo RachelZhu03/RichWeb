@@ -1,5 +1,7 @@
 'use client'
-import * as React from 'react'
+
+import React from 'react'
+import { useRouter } from 'next/router'
 import Avatar from '@mui/material/Avatar'
 import Button from '@mui/material/Button'
 import CssBaseline from '@mui/material/CssBaseline'
@@ -9,58 +11,42 @@ import Checkbox from '@mui/material/Checkbox'
 import Link from '@mui/material/Link'
 import Grid from '@mui/material/Grid'
 import Box from '@mui/material/Box'
-
 import Typography from '@mui/material/Typography'
 import Container from '@mui/material/Container'
-import { ThemeProvider } from '@mui/material/styles'
-
-import { createTheme } from '@mui/material/styles'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { green, purple } from '@mui/material/colors'
-
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
+import validator from 'email-validator'
 
-var validator = require("email-validator")
 export default function Page () {
 
 
-
-  /*
-  This function does the actual work
-  calling the fetch to get things from the database.
-  */
   async function runDBCallAsync (url) {
     const res = await fetch(url)
     if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
       const data = await res.json()
-      if (data.data == "true") {
+      if (data.data === "true") {
         console.log("registered")
+        window.location.href = '/dashboard'
       } else {
         console.log("not registered")
+        // Handle not registered case
       }
     } else {
       console.error('Error fetching data:', res.statusText)
     }
   }
 
-
-
   const validateForm = (event) => {
     let errorMessage = ''
     const data = new FormData(event.currentTarget)
-    // get the email
     let email = data.get('email')
-    // pull in the validator
-    var validator = require("email-validator")
-    // run the validator
-    let emailCheck = validator.validate(email)
-    // print the status true or false
-    console.log("email status" + emailCheck)
-    // if it is false, add to the error message.
-    if (emailCheck == false) {
+
+    if (!validator.validate(email)) {
       errorMessage += 'Incorrect email'
     }
     return errorMessage
