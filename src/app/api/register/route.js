@@ -1,46 +1,43 @@
-export async function GET (req, res) {
+import { cookies } from 'next/headers'
+import { MongoClient } from 'mongodb'
+import bcrypt from 'bcrypt'
+import validator from 'email-validator'
 
-  // Make a note we are on
-  // the api. This goes to the console.
+export async function GET (req, res) {
   console.log("in the api page")
 
-
-  // get the values
-  // that were sent across to us.
   const { searchParams } = new URL(req.url)
   const email = searchParams.get('email')
-  const address = searchParams.get('address')
   const pass = searchParams.get('pass')
-  const tell = searchParams.get('tell')
-  const dob = searchParams.get('dob')
 
-  console.log(email)
-  console.log(address)
-  console.log(pass)
-  console.log(tell)
-  console.log(dob)
+  // Validate email
+  if (!validator.validate(email)) {
+    return res.status(400).json({ error: 'Invalid email format' })
+  }
 
+  // Hash password
+  const saltRounds = 10
+  const hash = bcrypt.hashSync(pass, saltRounds)
 
+  try {
+    const url = 'your-mongodb-connection-string'
+    const client = new MongoClient(url)
+    await client.connect()
+    console.log('Connected successfully to server')
+    const db = client.db('app')
+    const collection = db.collection('login')
 
+    // Check if user already exists
+    const userExists = await collection.findOne({ email })
+    if (userExists) {
+      return res.status(400).json({ error: 'User already exists' })
+    }
 
-  // database call goes here
-
-  const { MongoClient } = require('mongodb')
-  const url = 'mongodb+srv://b00140882:lFbIHiA4SoXVuHSq@cluster0.6x4kycn.mongodb.net/?retryWrites=true&w=majority'
-  const client = new MongoClient(url)
-  const dbName = 'app' // database name
-  await client.connect()
-  console.log('Connected successfully to server')
-  const db = client.db(dbName)
-  const collection = db.collection('login') // collection name
-
-  const findResult = await collection.insertOne({
-    "username": email, "pass":
-      pass, "dob": dob
-  })
-  let valid = true
-
-  // at the end of the process we need to send something back.
-  return Response.json({ "data": "" + valid + "" })
+    // Insert new user
+    await collection.insertOne({ email, password: hash })
+    res.status(200).json({ message: 'User registered successfully' })
+  } catch (error) {
+    console.error('Error connecting to database:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
 }
-

@@ -1,5 +1,5 @@
 export async function GET (req, res) {
-
+  var validator = require("email-validator")
   // Make a note we are on
   // the api. This goes to the console.
   console.log("in the api page")

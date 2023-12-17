@@ -17,7 +17,13 @@ import { ThemeProvider } from '@mui/material/styles'
 import { createTheme } from '@mui/material/styles'
 import { green, purple } from '@mui/material/colors'
 
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
 
+var validator = require("email-validator")
 export default function Page () {
 
 
@@ -27,22 +33,38 @@ export default function Page () {
   calling the fetch to get things from the database.
   */
   async function runDBCallAsync (url) {
-
-
     const res = await fetch(url)
-    const data = await res.json()
-
-
-    if (data.data == "valid") {
-      console.log("login is valid!")
-
-
+    if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+      const data = await res.json()
+      if (data.data == "true") {
+        console.log("registered")
+      } else {
+        console.log("not registered")
+      }
     } else {
-
-      console.log("not valid  ")
+      console.error('Error fetching data:', res.statusText)
     }
   }
 
+
+
+  const validateForm = (event) => {
+    let errorMessage = ''
+    const data = new FormData(event.currentTarget)
+    // get the email
+    let email = data.get('email')
+    // pull in the validator
+    var validator = require("email-validator")
+    // run the validator
+    let emailCheck = validator.validate(email)
+    // print the status true or false
+    console.log("email status" + emailCheck)
+    // if it is false, add to the error message.
+    if (emailCheck == false) {
+      errorMessage += 'Incorrect email'
+    }
+    return errorMessage
+  }
 
   /*
 
@@ -50,28 +72,46 @@ export default function Page () {
   The first thing we need to do is prevent the default refresh of the page.
   */
   const handleSubmit = (event) => {
-
     console.log("handling submit")
-
-
     event.preventDefault()
 
+    let errorMessage = validateForm(event)
+    // save the mesage
+    setErrorHolder(errorMessage)
+
+    // if we have an error
+    if (errorMessage.length > 0) {
+      setOpen(true)
+    } else {
+      // if we do not get an error
+      const data = new FormData(event.currentTarget)
+      let email = data.get('email')
+      let pass = data.get('pass')
+      console.log("Sent email:" + email)
+      console.log("Sent pass:" + pass)
+      console.log("calling db")
+      runDBCallAsync(`api/login?email=${email}&pass=${pass}`)
+    }// error message if
+
+    // Process form submission if validation is successful
     const data = new FormData(event.currentTarget)
-
-
     let email = data.get('email')
     let pass = data.get('pass')
+    let address = data.get('address')
+    let tell = data.get('tell')
+    let dob = data.get('dob')
 
     console.log("Sent email:" + email)
     console.log("Sent pass:" + pass)
+    console.log("Sent address:" + address)
+    console.log("Sent tell:" + tell)
+    console.log("Sent dob:" + dob)
 
 
-    runDBCallAsync(`http://localhost:3000/api/login?email=${email}&pass=${pass}`)
-
-
-
-
+    console.log("calling db")
+    runDBCallAsync(`api/register?tell=${tell}&email=${email}&pass=${pass}&address=${address}&dob=${dob}`)
   } // end handler
+
 
 
 
@@ -87,11 +127,44 @@ export default function Page () {
   })
 
 
-
+  // first
+  const [open, setOpen] = React.useState(false)
+  const handleClickOpen = () => {
+    setOpen(true)
+  }
+  const handleClose = () => {
+    setOpen(false)
+  }
+  // second
+  const [errorHolder, setErrorHolder] = React.useState(false)
 
 
   return (
     <ThemeProvider theme={theme}>
+
+      <React.Fragment>
+        <Dialog
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {"Error"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              {errorHolder}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose} autoFocus>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </React.Fragment>
+
       <Container component="main" maxWidth="xs">
         <CssBaseline />
         <Box
@@ -106,7 +179,7 @@ export default function Page () {
 
           </Avatar>
           <Typography component="h1" variant="h5">
-            Log in
+            Register now
           </Typography>
           <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
             <TextField
@@ -123,12 +196,43 @@ export default function Page () {
               margin="normal"
               required
               fullWidth
+              id="address"
+              label="Address"
+              name="address"
+              autoComplete="address"
+              autoFocus
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
               name="pass"
               label="Pass"
               type="pass"
               id="pass"
               autoComplete="current-password"
             />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="tell"
+              label="Tellphone"
+              type="tell"
+              id="tell"
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="dob"
+              label="dob"
+              type="text"
+              id="dob"
+              autoComplete=""
+            />
+
+
             <FormControlLabel
               control={<Checkbox value="remember" color="primary" />}
               label="Remember me"
@@ -139,7 +243,7 @@ export default function Page () {
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
             >
-              Log in
+              Register me now
             </Button>
 
 
